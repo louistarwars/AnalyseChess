@@ -201,7 +201,7 @@ export function ImportScreen() {
   return (
     <div className="screen page-enter">
       <div className="topbar">
-        <h1>Importer</h1>
+        <h1 data-kana="インポート">Importer</h1>
       </div>
       <div className="segmented">
         <button className={tab === 'chesscom' ? 'active' : ''} onClick={() => setTabLocal('chesscom')}>

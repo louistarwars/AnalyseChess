@@ -4,6 +4,8 @@ import { EvalGraph } from '../../components/Eval';
 import { Avatar, CountUp, San } from '../../components/ui';
 import { moveLabel } from '../../lib/coach';
 import type { Classification, GameAnalysis, StoredGame } from '../../lib/types';
+import { CoachMascot } from '../../components/manga';
+import { useIsManga } from '../../lib/theme';
 import { useApp } from '../../store/app';
 
 const TABLE: Classification[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'];
@@ -32,6 +34,8 @@ export function ReviewSummary({
   onDelete: () => void;
 }) {
   const { white, black } = analysis.summary;
+  const manga = useIsManga();
+  const introMood = white.counts.brilliant + black.counts.brilliant > 0 ? 'wow' : white.counts.blunder + black.counts.blunder > 2 ? 'worried' : 'happy';
   const accounts = useApp((st) => st.accounts);
   const keyMoves = analysis.moves.filter((m) => ['brilliant', 'great', 'blunder', 'miss', 'mistake'].includes(m.classification));
   const markers = keyMoves.map((m) => ({ ply: m.ply, cls: m.classification }));
@@ -39,17 +43,27 @@ export function ReviewSummary({
 
   return (
     <div className="review-summary page-enter">
-      <div className="coach-bubble rise">
-        <div className="coach-avatar">
-          <img src="pieces/cburnett/wN.svg" alt="" />
-        </div>
-        <div className="coach-text">
-          <div className="coach-name">
-            <Sparkles size={13} /> Coach
+      {manga ? (
+        <div className="coach-bubble manga rise">
+          <CoachMascot mood={introMood} size={64} />
+          <div className="speech">
+            <div className="coach-name">コーチ · Coach</div>
+            {analysis.coachIntro || 'Voici le bilan de ta partie !'}
           </div>
-          {analysis.coachIntro || 'Voici le bilan de votre partie.'}
         </div>
-      </div>
+      ) : (
+        <div className="coach-bubble rise">
+          <div className="coach-avatar">
+            <img src="pieces/cburnett/wN.svg" alt="" />
+          </div>
+          <div className="coach-text">
+            <div className="coach-name">
+              <Sparkles size={13} /> Coach
+            </div>
+            {analysis.coachIntro || 'Voici le bilan de votre partie.'}
+          </div>
+        </div>
+      )}
 
       <div className="card graph-card rise" style={{ animationDelay: '60ms' }}>
         <EvalGraph evals={analysis.evals} current={-1} markers={markers} height={96} phases={analysis.phases} onSelect={(p) => onStart(p)} />

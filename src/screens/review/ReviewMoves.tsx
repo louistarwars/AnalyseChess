@@ -6,7 +6,9 @@ import { ClassIcon, CLASS_META } from '../../components/ClassIcon';
 import { EvalBar, EvalGraph } from '../../components/Eval';
 import { PlayerBar } from '../../components/PlayerBar';
 import { San } from '../../components/ui';
+import { CoachMascot, ImpactFrame, impactFor, mangaColor, moodFor, type ImpactSpec } from '../../components/manga';
 import { pushBackHandler } from '../../lib/back';
+import { useIsManga } from '../../lib/theme';
 import { getLiveEngine } from '../../lib/engine';
 import { formatScore } from '../../lib/evaluation';
 import { tapFeedback } from '../../lib/native';
@@ -49,6 +51,9 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
   const [explore, setExplore] = useState<Explore | null>(null);
   const [retry, setRetry] = useState<Retry | null>(null);
   const [shake, setShake] = useState(false);
+  const [impact, setImpact] = useState<{ spec: ImpactSpec; key: number } | null>(null);
+  const manga = useIsManga();
+  const impactFx = useSettings((st) => st.impactFx);
   const [live, setLive] = useState<PositionEval | null>(null);
   const [engineOn, setEngineOn] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -67,9 +72,24 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
       setPly(np);
       tapFeedback();
       if (withSound && sounds && np === pos + 1) playMoveSound(soundForSan(moves[np - 1].san));
+      // Case d'impact manga quand on avance sur un coup marquant
+      if (manga && impactFx && np === pos + 1) {
+        const mv = moves[np - 1];
+        const spec = impactFor(mv.classification, mv.tags);
+        if (spec) {
+          setImpact({ spec, key: Date.now() });
+          if (spec.tone === 'dark') tapFeedback('medium');
+        }
+      }
     },
-    [pos, total, setPly, sounds, moves],
+    [pos, total, setPly, sounds, moves, manga, impactFx],
   );
+
+  useEffect(() => {
+    if (!impact) return;
+    const t = setTimeout(() => setImpact(null), 1400);
+    return () => clearTimeout(t);
+  }, [impact]);
 
   // Lecture automatique
   useEffect(() => {
@@ -244,7 +264,8 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
   return (
     <div className="review-moves">
       {bar(top)}
-      <div className={`board-row ${shake ? 'shake' : ''}`}>
+      <div className={`board-row ${shake ? 'shake' : ''} ${impact?.spec.tone === 'dark' ? 'impact-dark' : ''}`}>
+        {impact && <ImpactFrame key={impact.key} spec={impact.spec} />}
         <EvalBar score={barScore} orientation={orientation} result={pos === total && !retry && !explore ? game.result : undefined} />
         <Board fen={fen} orientation={orientation} lastMove={lastMove} arrows={arrows} badge={badge} interactive onMove={onBoardMove} />
       </div>
@@ -382,6 +403,20 @@ function EngineLines({ ev, fen }: { ev: PositionEval | null; fen: string }) {
 }
 
 function CoachCard({ analysis, pos, onBest, onRetry }: { analysis: GameAnalysis; pos: number; onBest: () => void; onRetry: () => void }) {
+  const manga = useIsManga();
+  if (pos === 0 && manga) {
+    return (
+      <div className="coach-card manga-coach">
+        <div className="manga-coach-row">
+          <CoachMascot mood="happy" size={58} />
+          <div className="speech">
+            <div className="cc-title">Prêt pour la revue ?</div>
+            <div className="cc-text">{analysis.opening ? `${analysis.opening.eco} · ${analysis.opening.name}` : 'Avance coup par coup pour découvrir le bilan de chaque coup !'}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (pos === 0) {
     return (
       <div className="coach-card">
@@ -400,6 +435,41 @@ function CoachCard({ analysis, pos, onBest, onRetry }: { analysis: GameAnalysis;
   const m = analysis.moves[pos - 1];
   const meta = CLASS_META[m.classification];
   const bad = !GOOD.has(m.classification) && m.bestSan && m.bestSan !== m.san;
+  const actions = bad && (
+    <div className="cc-actions">
+      {RETRYABLE.has(m.classification) && (
+        <button className="best-btn retry-btn" onClick={onRetry}>
+          <RotateCcw size={15} /> Réessayer
+        </button>
+      )}
+      <button className="best-btn" onClick={onBest}>
+        <ClassIcon cls="best" size={16} /> <San san={m.bestSan!} color={m.color} />
+        <span className="dim">· suite</span>
+      </button>
+    </div>
+  );
+  if (manga) {
+    return (
+      <div className="coach-card manga-coach" style={{ ['--cls' as string]: mangaColor(m.classification) }} key={pos}>
+        <div className="manga-coach-row">
+          <CoachMascot mood={moodFor(m.classification)} size={58} />
+          <div className="speech">
+            <div className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
+              <ClassIcon cls={m.classification} size={24} />
+              <span className="cc-title">
+                <San san={m.san} color={m.color} />
+              </span>
+              <span className="cc-cls">{meta.label}</span>
+              <span className="grow" />
+              <span className={`eval-chip num ${m.evalAfter.cp >= 0 ? 'w' : 'b'}`}>{formatScore(m.evalAfter)}</span>
+            </div>
+            <div className="cc-text">{m.comment}</div>
+            {actions}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="coach-card" style={{ ['--cls' as string]: meta.color }} key={pos}>
       <div className="row" style={{ alignItems: 'flex-start' }}>
@@ -413,19 +483,7 @@ function CoachCard({ analysis, pos, onBest, onRetry }: { analysis: GameAnalysis;
             <span className={`eval-chip num ${m.evalAfter.cp >= 0 ? 'w' : 'b'}`}>{formatScore(m.evalAfter)}</span>
           </div>
           <div className="cc-text">{m.comment}</div>
-          {bad && (
-            <div className="cc-actions">
-              {RETRYABLE.has(m.classification) && (
-                <button className="best-btn retry-btn" onClick={onRetry}>
-                  <RotateCcw size={15} /> Réessayer
-                </button>
-              )}
-              <button className="best-btn" onClick={onBest}>
-                <ClassIcon cls="best" size={16} /> <San san={m.bestSan!} color={m.color} />
-                <span className="dim">· suite</span>
-              </button>
-            </div>
-          )}
+          {actions}
         </div>
       </div>
     </div>

@@ -1,5 +1,17 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { GameAnalysis, LinkedAccount, StoredGame } from './types';
+import { ELO_MODEL_VERSION, eloFromSummary } from './elo';
+import type { AnalysisSummary, GameAnalysis, LinkedAccount, StoredGame } from './types';
+
+/** Met à jour l'Elo estimé des analyses faites avec un ancien modèle. */
+function upgradeSummary(s: AnalysisSummary, g?: { whiteElo?: number; blackElo?: number }): AnalysisSummary {
+  if (s.eloModel === ELO_MODEL_VERSION) return s;
+  return {
+    ...s,
+    eloModel: ELO_MODEL_VERSION,
+    white: { ...s.white, estimatedElo: eloFromSummary(s.white, g?.whiteElo) },
+    black: { ...s.black, estimatedElo: eloFromSummary(s.black, g?.blackElo) },
+  };
+}
 
 interface ChessDB extends DBSchema {
   games: {
@@ -35,7 +47,17 @@ function db() {
 }
 
 export async function getAllGames(): Promise<StoredGame[]> {
-  const all = await (await db()).getAllFromIndex('games', 'byTimestamp');
+  const d = await db();
+  const all = await d.getAllFromIndex('games', 'byTimestamp');
+  const outdated = all.filter((g) => g.summary && g.summary.eloModel !== ELO_MODEL_VERSION);
+  if (outdated.length) {
+    const tx = d.transaction('games', 'readwrite');
+    for (const g of outdated) {
+      g.summary = upgradeSummary(g.summary!, g);
+      await tx.store.put(g);
+    }
+    await tx.done;
+  }
   return all.reverse();
 }
 
@@ -75,7 +97,13 @@ export async function deleteGame(id: string) {
 }
 
 export async function getAnalysis(gameId: string) {
-  return (await db()).get('analyses', gameId);
+  const d = await db();
+  const a = await d.get('analyses', gameId);
+  if (a && a.summary.eloModel !== ELO_MODEL_VERSION) {
+    a.summary = upgradeSummary(a.summary, await d.get('games', gameId));
+    await d.put('analyses', a);
+  }
+  return a;
 }
 
 export async function deleteAnalysis(gameId: string) {

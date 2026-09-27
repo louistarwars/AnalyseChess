@@ -2,7 +2,7 @@ import { Chess } from 'chess.js';
 import { gameAccuracy, phaseAccuracy } from './accuracy';
 import { bestScore, classifyMove, type ClassificationResult } from './classify';
 import { coachComment, coachIntro } from './coach';
-import { estimateElo } from './elo';
+import { ELO_MODEL_VERSION, eloFromSummary } from './elo';
 import { CancelledError, type Engine } from './engine';
 import { povCp } from './evaluation';
 import { identifyOpening, loadOpenings, lookupSync } from './openings';
@@ -194,6 +194,11 @@ export function buildAnalysis(gameId: string, parsed: ParsedGame, evals: Positio
     });
   });
 
+  const ratingOf = (color: Color) => {
+    const r = Number(parsed.headers[color === 'w' ? 'WhiteElo' : 'BlackElo']);
+    return Number.isFinite(r) && r > 0 ? r : undefined;
+  };
+
   const summarize = (color: Color): PlayerSummary => {
     const mine = moves.filter((m) => m.color === color);
     const counts = EMPTY_COUNTS();
@@ -226,20 +231,10 @@ export function buildAnalysis(gameId: string, parsed: ParsedGame, evals: Positio
       if (bad) errorPieces[m.piece] = (errorPieces[m.piece] ?? 0) + 1;
     }
     const wins = mine.map((m) => m.winAfter);
-    // Pour l'Elo, seuls les coups joués dans une position encore « disputée » sont informatifs.
-    const contested = mine.filter((m) => m.winBefore >= 8 && m.winBefore <= 92 && m.classification !== 'book' && m.classification !== 'forced');
-    const eloBase =
-      contested.length >= 6
-        ? {
-            accuracy: phaseAccuracy(contested.map((m) => m.accuracy)) ?? accuracy,
-            acpl: contested.reduce((s, m) => s + Math.min(1000, m.cpLoss), 0) / contested.length,
-            moves: contested.length,
-          }
-        : { accuracy, acpl, moves: mine.filter((m) => m.classification !== 'book').length };
     return {
       accuracy,
       acpl,
-      estimatedElo: estimateElo({ ...eloBase, blunders: counts.blunder, mistakes: counts.mistake + counts.miss }),
+      estimatedElo: eloFromSummary({ accuracy, acpl, moves: mine.length, counts }, ratingOf(color)),
       moves: mine.length,
       counts,
       phaseAccuracy: {
@@ -271,7 +266,7 @@ export function buildAnalysis(gameId: string, parsed: ParsedGame, evals: Positio
     evals: scores,
     opening,
     phases,
-    summary: { depth, analyzedAt: Date.now(), white, black },
+    summary: { depth, analyzedAt: Date.now(), white, black, eloModel: ELO_MODEL_VERSION },
     coachIntro: coachIntro(moves, white, black, parsed.result, names),
   };
 }

@@ -10,7 +10,11 @@ export const DEPTHS: Record<DepthPreset, { depth: number; label: string; hint: s
   deep: { depth: 16, label: 'Approfondie', hint: '≈ 2 min par partie' },
 };
 
+export type AppTheme = 'classic' | 'manga';
+
 interface SettingsState {
+  appTheme: AppTheme;
+  impactFx: boolean;
   boardTheme: string;
   pieceSet: string;
   notation: NotationStyle;
@@ -27,6 +31,8 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
+      appTheme: 'classic',
+      impactFx: true,
       boardTheme: 'green',
       pieceSet: 'cburnett',
       notation: 'figurine',

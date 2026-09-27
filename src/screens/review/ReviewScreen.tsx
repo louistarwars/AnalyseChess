@@ -2,6 +2,8 @@ import { ArrowLeft, BarChart3, ListChecks, Share2, Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Board } from '../../components/Board';
 import { EvalBar } from '../../components/Eval';
+import { Sfx } from '../../components/manga';
+import { TipCard } from '../../components/TipCard';
 import { Ring } from '../../components/ui';
 import { deleteAnalysis, getAnalysis } from '../../lib/db';
 import { shareText } from '../../lib/native';
@@ -125,6 +127,12 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
           <div className="board-row">
             <EvalBar score={p?.score} orientation={orientation} />
             <Board fen={fen} orientation={orientation} lastMove={lm ? { from: lm.from, to: lm.to } : undefined} />
+            {(analyzing || queued) && (
+              <div className="menace">
+                <Sfx className="menace-col left">ゴゴゴ</Sfx>
+                <Sfx className="menace-col right">ゴゴゴ</Sfx>
+              </div>
+            )}
           </div>
           <div className="card analyzing-card rise">
             {analyzing || queued ? (
@@ -159,6 +167,7 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
               </div>
             )}
           </div>
+          {(analyzing || queued) && <TipCard />}
         </div>
       </div>
     );

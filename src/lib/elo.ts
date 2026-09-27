@@ -1,21 +1,31 @@
-/** Estimation de la performance Elo à partir de la précision et de la perte moyenne (ACPL). */
+/**
+ * Estimation de la performance Elo d'une partie (modèle v2).
+ *
+ * Calibré par simulation (joueurs « humains » simulés avec Stockfish à des taux d'erreurs
+ * typiques de chaque niveau, puis analysés par l'application). Trois signaux sont combinés :
+ *  - le taux d'erreurs pondéré (gaffe > occasion manquée > erreur > imprécision), le plus discriminant ;
+ *  - la précision (échelle volontairement sévère : l'algorithme Lichess est indulgent) ;
+ *  - la perte moyenne en centipions (ACPL).
+ * Tous les coups joués comptent (hors théorie et coups forcés) : une partie décidée tôt par une gaffe
+ * n'est plus jugée sur ses seuls bons coups d'ouverture. L'Elo réel du joueur, quand il est connu,
+ * sert d'a priori (moyenne bayésienne) pour éviter les valeurs aberrantes sur une seule partie.
+ */
+
+export const ELO_MODEL_VERSION = 2;
 
 const ACC_POINTS: [number, number][] = [
   [0, 100],
-  [40, 250],
-  [50, 450],
-  [58, 700],
-  [64, 950],
-  [69, 1200],
-  [73.5, 1450],
-  [77.5, 1700],
-  [81, 1950],
-  [84.5, 2200],
-  [88, 2450],
-  [91, 2700],
-  [94, 2900],
-  [97, 3100],
-  [100, 3300],
+  [45, 250],
+  [60, 500],
+  [70, 850],
+  [76, 1100],
+  [82, 1450],
+  [87, 1800],
+  [90, 2100],
+  [93, 2450],
+  [95.5, 2750],
+  [98, 3050],
+  [100, 3250],
 ];
 
 function interp(points: [number, number][], x: number): number {
@@ -31,21 +41,47 @@ function interp(points: [number, number][], x: number): number {
 export interface EloInput {
   accuracy: number;
   acpl: number;
+  /** Coups comptés (hors théorie et coups forcés). */
   moves: number;
   blunders: number;
   mistakes: number;
+  misses?: number;
+  inaccuracies?: number;
+  /** Elo réel du joueur dans cette partie, s'il est connu. */
+  rating?: number;
 }
 
-export function estimateElo({ accuracy, acpl, moves, blunders, mistakes }: EloInput): number {
-  const fromAcc = interp(ACC_POINTS, accuracy);
-  const fromAcpl = Math.max(100, Math.min(3300, 3200 * Math.exp(-0.0105 * acpl)));
-  let est = 0.62 * fromAcc + 0.38 * fromAcpl;
+export function estimateElo({ accuracy, acpl, moves, blunders, mistakes, misses = 0, inaccuracies = 0, rating }: EloInput): number {
   const n = Math.max(1, moves);
-  est -= 350 * (blunders / n) + 120 * (mistakes / n);
-  // Peu de coups = estimation peu fiable : on la ramène vers la moyenne.
-  const k = n / (n + 4);
-  est = 1500 + (est - 1500) * k;
-  return Math.round(Math.max(100, Math.min(3300, est)) / 10) * 10;
+  const errorRate = (blunders + 0.8 * misses + 0.5 * mistakes + 0.15 * inaccuracies) / n;
+  const fromErrors = 1000 - 700 * Math.log(Math.max(0.005, errorRate) / 0.1);
+  const fromAcc = interp(ACC_POINTS, accuracy);
+  const fromAcpl = 3000 * Math.exp(-0.016 * acpl);
+  let est = 0.45 * fromErrors + 0.3 * fromAcc + 0.25 * fromAcpl;
+  est = Math.max(100, Math.min(3200, est));
+  // Moyenne bayésienne : une partie courte renseigne peu, on la ramène vers l'a priori.
+  const prior = rating && rating > 0 ? rating : 1500;
+  const weight = n / (n + (rating ? 10 : 8));
+  est = prior + (est - prior) * weight;
+  return Math.round(Math.max(100, Math.min(3200, est)) / 10) * 10;
+}
+
+/** Recalcule l'Elo estimé à partir d'un résumé de joueur déjà stocké (migration des anciennes analyses). */
+export function eloFromSummary(
+  s: { accuracy: number; acpl: number; moves: number; counts: Record<string, number> },
+  rating?: number,
+): number {
+  const counted = Math.max(1, s.moves - (s.counts.book ?? 0) - (s.counts.forced ?? 0));
+  return estimateElo({
+    accuracy: s.accuracy,
+    acpl: s.acpl,
+    moves: counted,
+    blunders: s.counts.blunder ?? 0,
+    mistakes: s.counts.mistake ?? 0,
+    misses: s.counts.miss ?? 0,
+    inaccuracies: s.counts.inaccuracy ?? 0,
+    rating,
+  });
 }
 
 export interface EloSample {

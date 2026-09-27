@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { runBackHandlers } from './lib/back';
 import { isNative, tapFeedback } from './lib/native';
 import { loadOpenings } from './lib/openings';
+import { useApplyTheme } from './lib/theme';
 import { GamesScreen } from './screens/GamesScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { ImportScreen } from './screens/ImportScreen';
@@ -32,16 +33,18 @@ function TabBar() {
     <nav className="tabbar">
       {item('home', 'Accueil', Home)}
       {item('games', 'Parties', SquareStack)}
-      <button
-        className="tab-fab"
-        aria-label="Importer"
-        onClick={() => {
-          tapFeedback('medium');
-          setTab('import');
-        }}
-      >
-        <Plus size={28} strokeWidth={2.6} />
-      </button>
+      <span className="tab-fab-wrap">
+        <button
+          className="tab-fab"
+          aria-label="Importer"
+          onClick={() => {
+            tapFeedback('medium');
+            setTab('import');
+          }}
+        >
+          <Plus size={28} strokeWidth={2.8} />
+        </button>
+      </span>
       {item('stats', 'Stats', BarChart3)}
       {item('settings', 'Réglages', Settings)}
     </nav>
@@ -63,6 +66,7 @@ function Toast() {
 
 export default function App() {
   const { loaded, tab, stack, init } = useApp();
+  useApplyTheme();
 
   useEffect(() => {
     init().finally(() => {

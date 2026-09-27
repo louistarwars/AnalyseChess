@@ -73,7 +73,7 @@ export function StatsScreen() {
     return (
       <div className="screen page-enter">
         <div className="topbar">
-          <h1>Statistiques</h1>
+          <h1 data-kana="統計">Statistiques</h1>
         </div>
         <div className="card empty">
           <div className="empty-icon">
@@ -103,7 +103,7 @@ export function StatsScreen() {
   return (
     <div className="screen page-enter">
       <div className="topbar">
-        <h1>Statistiques</h1>
+        <h1 data-kana="統計">Statistiques</h1>
         {accounts[0] && <PlatformLogo platform={accounts[0].platform} size={30} />}
       </div>
 
@@ -121,7 +121,7 @@ export function StatsScreen() {
       )}
 
       {/* Elo estimé + prédiction */}
-      <div className="hero rise">
+      <div className="hero rise" data-kanji="王手">
         <div className="hero-label">Niveau estimé par l’analyse</div>
         <div className="row" style={{ alignItems: 'flex-end', gap: 14 }}>
           <div className="hero-elo">{ins.estimatedElo ? <CountUp value={ins.estimatedElo.elo} /> : '– – –'}</div>

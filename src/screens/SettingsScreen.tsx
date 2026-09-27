@@ -1,4 +1,4 @@
-import { ArrowUpRight, Cpu, Grid3x3, Info, MoveUpRight, Palette, Sparkles, Trash2, Vibrate, Volume2, Type } from 'lucide-react';
+import { ArrowUpRight, Check, Cpu, Grid3x3, Info, MoveUpRight, Palette, Sparkles, Trash2, Vibrate, Volume2, Type, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Board } from '../components/Board';
 import { Switch } from '../components/ui';
@@ -6,7 +6,51 @@ import { clearAll } from '../lib/db';
 import type { NotationStyle } from '../lib/notation';
 import { BOARD_THEMES, PIECE_SETS, pieceUrl } from '../lib/themes';
 import { useApp } from '../store/app';
-import { DEPTHS, useSettings, type DepthPreset } from '../store/settings';
+import { DEPTHS, useSettings, type AppTheme, type DepthPreset } from '../store/settings';
+import { SpeedLines, Sfx } from '../components/manga';
+
+function ThemePicker({ value, onChange }: { value: AppTheme; onChange: (t: AppTheme) => void }) {
+  return (
+    <div className="theme-tiles">
+      <button className={`theme-tile tt-classic ${value === 'classic' ? 'active' : ''}`} onClick={() => onChange('classic')}>
+        <div className="tt-preview">
+          <div className="tt-glow" />
+          <div className="tt-board">
+            {Array.from({ length: 16 }, (_, i) => (
+              <span key={i} className={(i + Math.floor(i / 4)) % 2 ? 'd' : 'l'} />
+            ))}
+          </div>
+          <div className="tt-lines">
+            <span style={{ width: '70%' }} />
+            <span style={{ width: '45%' }} />
+          </div>
+          <div className="tt-btn" />
+        </div>
+        <div className="tt-name">
+          Classique {value === 'classic' && <Check size={15} />}
+        </div>
+        <div className="tt-sub">Sombre & élégant</div>
+      </button>
+      <button className={`theme-tile tt-manga ${value === 'manga' ? 'active' : ''}`} onClick={() => onChange('manga')}>
+        <div className="tt-preview">
+          <SpeedLines count={70} inner={0.3} cx={0.72} cy={0.3} color="#141414" style={{ opacity: 0.28 }} />
+          <div className="tt-board">
+            {Array.from({ length: 16 }, (_, i) => (
+              <span key={i} className={(i + Math.floor(i / 4)) % 2 ? 'd' : 'l'} />
+            ))}
+          </div>
+          <Sfx className="tt-sfx">ドン!</Sfx>
+          <div className="tt-bubble">!!</div>
+          <div className="tt-btn" />
+        </div>
+        <div className="tt-name">
+          Manga {value === 'manga' && <Check size={15} />}
+        </div>
+        <div className="tt-sub">Encre, trames & onomatopées</div>
+      </button>
+    </div>
+  );
+}
 
 function Row({ icon, color, title, sub, right }: { icon: ReactNode; color: string; title: string; sub?: string; right?: ReactNode }) {
   return (
@@ -30,32 +74,45 @@ export function SettingsScreen() {
   return (
     <div className="screen page-enter">
       <div className="topbar">
-        <h1>Réglages</h1>
+        <h1 data-kana="設定">Réglages</h1>
       </div>
 
-      <div className="card tight" style={{ marginBottom: 18 }}>
-        <Board fen="r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4" lastMove={{ from: 'h5', to: 'f7' }} badge={{ square: 'f7', cls: 'best' }} />
+      <div className="section-title" style={{ marginTop: 4 }}>
+        <h2>Thème</h2>
+      </div>
+      <ThemePicker value={s.appTheme} onChange={(appTheme) => s.set({ appTheme })} />
+
+      <div className="card tight" style={{ margin: '18px 0' }}>
+        <Board fen="r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4" lastMove={{ from: 'h5', to: 'f7' }} badge={{ square: 'f7', cls: 'brilliant' }} />
       </div>
 
       <div className="section-title" style={{ marginTop: 0 }}>
         <h2>Échiquier</h2>
       </div>
       <div className="card">
-        <div className="row" style={{ marginBottom: 12 }}>
-          <Palette size={18} className="dim" /> <b>Couleurs</b>
-        </div>
-        <div className="theme-grid">
-          {BOARD_THEMES.map((t) => (
-            <button key={t.id} className={`theme-swatch ${s.boardTheme === t.id ? 'active' : ''}`} onClick={() => s.set({ boardTheme: t.id })}>
-              <div className="mini">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <div key={i} style={{ background: (i + Math.floor(i / 4)) % 2 === 0 ? t.light : t.dark }} />
-                ))}
-              </div>
-              {t.name}
-            </button>
-          ))}
-        </div>
+        {s.appTheme === 'manga' ? (
+          <div className="row small muted" style={{ marginBottom: 4 }}>
+            <Palette size={18} style={{ flexShrink: 0 }} /> Le thème Manga utilise son propre échiquier encre &amp; trame.
+          </div>
+        ) : (
+          <>
+            <div className="row" style={{ marginBottom: 12 }}>
+              <Palette size={18} className="dim" /> <b>Couleurs</b>
+            </div>
+            <div className="theme-grid">
+              {BOARD_THEMES.map((t) => (
+                <button key={t.id} className={`theme-swatch ${s.boardTheme === t.id ? 'active' : ''}`} onClick={() => s.set({ boardTheme: t.id })}>
+                  <div className="mini">
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <div key={i} style={{ background: (i + Math.floor(i / 4)) % 2 === 0 ? t.light : t.dark }} />
+                    ))}
+                  </div>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <div className="row" style={{ margin: '18px 0 12px' }}>
           <Sparkles size={18} className="dim" /> <b>Pièces</b>
         </div>
@@ -117,6 +174,9 @@ export function SettingsScreen() {
         </div>
       </div>
       <div className="setting-group" style={{ marginTop: 12 }}>
+        {s.appTheme === 'manga' && (
+          <Row icon={<Zap size={18} />} color="#e8322b" title="Cases d'impact" sub="Effets manga sur les coups brillants, gaffes et mats" right={<Switch on={s.impactFx} onChange={(v) => s.set({ impactFx: v })} />} />
+        )}
         <Row icon={<Sparkles size={18} />} color="#26c2a3" title="Analyse automatique" sub="Analyser dès l’ouverture d’une partie" right={<Switch on={s.autoAnalyze} onChange={(v) => s.set({ autoAnalyze: v })} />} />
         <Row icon={<Volume2 size={18} />} color="#f5c04a" title="Sons" right={<Switch on={s.sounds} onChange={(v) => s.set({ sounds: v })} />} />
         <Row icon={<Vibrate size={18} />} color="#e8844a" title="Vibrations" right={<Switch on={s.haptics} onChange={(v) => s.set({ haptics: v })} />} />
@@ -156,7 +216,7 @@ export function AboutScreen() {
         <button className="icon-btn" onClick={pop}>
           <ArrowUpRight size={20} style={{ transform: 'rotate(-135deg)' }} />
         </button>
-        <h1>À propos</h1>
+        <h1 data-kana="アバウト">À propos</h1>
       </div>
       <div className="card col" style={{ gap: 14, lineHeight: 1.55 }}>
         <div className="row">
@@ -180,6 +240,7 @@ export function AboutScreen() {
             <li>chess.js (BSD-2)</li>
             <li>Pièces « cburnett » (Colin M.L. Burnett, GPL v2+), « merida » (GPL v2+), « chessnut » (Apache 2.0)</li>
             <li>Base d’ouvertures lichess-org/chess-openings (CC0)</li>
+            <li>Polices Inter, Outfit, Nunito, Dela Gothic One, Bangers, Yuji Boku (SIL OFL)</li>
             <li>API publiques de Chess.com et de Lichess</li>
           </ul>
         </div>

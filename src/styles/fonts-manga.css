@@ -1,0 +1,24 @@
+/* Polices du thème Manga (OFL) : uniquement les sous-ensembles latins + un sous-ensemble japonais minimal pour les SFX */
+@import '@fontsource/dela-gothic-one/latin-400.css';
+@import '@fontsource/dela-gothic-one/latin-ext-400.css';
+@import '@fontsource/bangers/latin-400.css';
+@import '@fontsource/bangers/latin-ext-400.css';
+@import '@fontsource-variable/nunito/wght.css';
+
+@font-face {
+  font-family: 'Manga SFX';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/manga-sfx.woff2') format('woff2');
+}
+
+/* Kanji calligraphiés au pinceau (Yuji Boku, OFL) : sceaux et titres */
+@font-face {
+  font-family: 'Manga Brush';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/manga-brush.woff2') format('woff2');
+  unicode-range: U+4E00-9FFF, U+3040-309F;
+}

@@ -1,4 +1,6 @@
+import { useIsManga } from '../lib/theme';
 import type { Classification } from '../lib/types';
+import { MangaClassGlyph } from './manga';
 
 export const CLASS_META: Record<Classification, { label: string; plural: string; color: string; symbol?: string }> = {
   brilliant: { label: 'Brillant', plural: 'Brillants', color: 'var(--c-brilliant)', symbol: '!!' },
@@ -78,6 +80,8 @@ function Glyph({ cls }: { cls: Classification }) {
 }
 
 export function ClassIcon({ cls, size = 20, shadow = false, className }: { cls: Classification; size?: number; shadow?: boolean; className?: string }) {
+  const manga = useIsManga();
+  if (manga) return <MangaClassGlyph cls={cls} size={size} className={className} />;
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" className={className} style={{ flexShrink: 0, filter: shadow ? 'drop-shadow(0 2px 3px rgba(0,0,0,.45))' : undefined }}>
       <circle cx="10" cy="10" r="10" fill={CLASS_HEX[cls]} />

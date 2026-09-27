@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { formatSan, splitSan } from '../lib/notation';
+import { useIsManga } from '../lib/theme';
 import { pieceUrl } from '../lib/themes';
 import { useSettings } from '../store/settings';
 
@@ -79,8 +80,41 @@ export function Ring({ value, size = 64, stroke = 6, color = 'var(--accent-hi)',
     const id = requestAnimationFrame(() => setV(value));
     return () => cancelAnimationFrame(id);
   }, [value]);
+  const manga = useIsManga();
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
+  if (manga) {
+    const sw = stroke + 2;
+    const rr = (size - sw - 6) / 2;
+    const cc = 2 * Math.PI * rr;
+    return (
+      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
+          <defs>
+            <pattern id="ringTone" width="4" height="4" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="0.9" fill="#141414" opacity="0.4" />
+            </pattern>
+          </defs>
+          <circle cx={size / 2 + 3} cy={size / 2 - 3} r={rr} fill="none" stroke="#141414" strokeWidth={sw + 5} />
+          <circle cx={size / 2} cy={size / 2} r={rr} fill="#fffdf6" stroke="#141414" strokeWidth={sw + 5} />
+          <circle cx={size / 2} cy={size / 2} r={rr} fill="none" stroke="#fffdf6" strokeWidth={sw} />
+          <circle cx={size / 2} cy={size / 2} r={rr} fill="none" stroke="url(#ringTone)" strokeWidth={sw} />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={rr}
+            fill="none"
+            stroke="#e8322b"
+            strokeWidth={sw}
+            strokeDasharray={cc}
+            strokeDashoffset={cc * (1 - Math.max(0, Math.min(100, v)) / 100)}
+            style={{ transition: 'stroke-dashoffset 1.1s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>{children}</div>
+      </div>
+    );
+  }
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
@@ -160,7 +194,7 @@ export function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) =
 export function LineChart({
   points,
   height = 140,
-  color = '#9bd35f',
+  color: colorProp = '#9bd35f',
   yFormat = (v: number) => String(Math.round(v)),
   band,
 }: {
@@ -170,7 +204,10 @@ export function LineChart({
   yFormat?: (v: number) => string;
   band?: number;
 }) {
+  let color = colorProp;
+  const manga = useIsManga();
   if (points.length < 2) return <div className="dim small" style={{ height, display: 'grid', placeItems: 'center' }}>Pas encore assez de données</div>;
+  if (manga) color = color === '#26c2a3' ? '#3c7ddb' : '#e8322b';
   const W = 340;
   const H = height;
   const padL = 36;
@@ -211,17 +248,25 @@ export function LineChart({
           <stop offset="1" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
+      {manga && (
+        <defs>
+          <pattern id={`${gid}t`} width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2.5" cy="2.5" r="1" fill="#141414" opacity="0.45" />
+          </pattern>
+        </defs>
+      )}
       {ticks.map((t, i) => (
         <g key={i}>
-          <line x1={padL} x2={W - padR} y1={Y(t)} y2={Y(t)} stroke="rgba(255,255,255,0.06)" />
-          <text x={padL - 6} y={Y(t) + 4} textAnchor="end" fontSize="10" fill="#7d8699" fontFamily="Outfit Variable, sans-serif">
+          <line x1={padL} x2={W - padR} y1={Y(t)} y2={Y(t)} stroke={manga ? 'rgba(20,20,20,0.18)' : 'rgba(255,255,255,0.06)'} strokeDasharray={manga ? '3 4' : undefined} />
+          <text x={padL - 6} y={Y(t) + 4} textAnchor="end" fontSize={manga ? 12 : 10} fill={manga ? '#3d3a34' : '#7d8699'} fontFamily={manga ? 'Bangers, sans-serif' : 'Outfit Variable, sans-serif'} letterSpacing={manga ? 0.5 : 0}>
             {yFormat(t)}
           </text>
         </g>
       ))}
-      <path d={area} fill={`url(#${gid})`} />
-      <path d={d} fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" className="draw-line" />
-      <circle cx={X(last.x)} cy={Y(last.y)} r="4.5" fill={color} stroke="#0b0d12" strokeWidth="2" />
+      <path d={area} fill={manga ? `url(#${gid}t)` : `url(#${gid})`} />
+      {manga && <path d={d} fill="none" stroke="#141414" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="draw-line" />}
+      <path d={d} fill="none" stroke={color} strokeWidth={manga ? 3 : 2.4} strokeLinecap="round" strokeLinejoin="round" className="draw-line" />
+      <circle cx={X(last.x)} cy={Y(last.y)} r={manga ? 6 : 4.5} fill={color} stroke={manga ? '#141414' : '#0b0d12'} strokeWidth={manga ? 2.5 : 2} />
     </svg>
   );
 }
@@ -233,9 +278,10 @@ export function Radar({ items, size = 280 }: { items: { label: string; score: nu
     const id = requestAnimationFrame(() => setAnim(1));
     return () => cancelAnimationFrame(id);
   }, []);
+  const manga = useIsManga();
   if (items.length < 3) return null;
   const c = size / 2;
-  const R = size / 2 - 46;
+  const R = size / 2 - (manga ? 58 : 46);
   const angle = (i: number) => -Math.PI / 2 + (i / items.length) * Math.PI * 2;
   const pt = (i: number, r: number) => [c + Math.cos(angle(i)) * r, c + Math.sin(angle(i)) * r];
   const poly = items.map((it, i) => pt(i, (R * it.score * anim) / 100).join(',')).join(' ');
@@ -247,24 +293,38 @@ export function Radar({ items, size = 280 }: { items: { label: string; score: nu
           <stop offset="1" stopColor="#26c2a3" stopOpacity="0.35" />
         </linearGradient>
       </defs>
+      {manga && (
+        <defs>
+          <pattern id="radarTone" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2.5" cy="2.5" r="1.15" fill="#e8322b" />
+          </pattern>
+        </defs>
+      )}
       {[0.25, 0.5, 0.75, 1].map((k) => (
-        <polygon key={k} points={items.map((_, i) => pt(i, R * k).join(',')).join(' ')} fill="none" stroke="rgba(255,255,255,0.08)" />
+        <polygon key={k} points={items.map((_, i) => pt(i, R * k).join(',')).join(' ')} fill="none" stroke={manga ? (k === 1 ? '#141414' : 'rgba(20,20,20,0.25)') : 'rgba(255,255,255,0.08)'} strokeWidth={manga && k === 1 ? 2.5 : 1} strokeDasharray={manga && k < 1 ? '3 3' : undefined} />
       ))}
       {items.map((_, i) => {
         const [x, y] = pt(i, R);
-        return <line key={i} x1={c} y1={c} x2={x} y2={y} stroke="rgba(255,255,255,0.06)" />;
+        return <line key={i} x1={c} y1={c} x2={x} y2={y} stroke={manga ? 'rgba(20,20,20,0.25)' : 'rgba(255,255,255,0.06)'} />;
       })}
-      <polygon points={poly} fill="url(#radarFill)" stroke="#9bd35f" strokeWidth="2" strokeLinejoin="round" style={{ transition: 'all 1s cubic-bezier(0.2, 0.8, 0.2, 1)' }} />
+      <polygon
+        points={poly}
+        fill={manga ? 'url(#radarTone)' : 'url(#radarFill)'}
+        stroke={manga ? '#141414' : '#9bd35f'}
+        strokeWidth={manga ? 3 : 2}
+        strokeLinejoin="round"
+        style={{ transition: 'all 1s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+      />
       {items.map((it, i) => {
         const [x, y] = pt(i, (R * it.score * anim) / 100);
         const [lx, ly] = pt(i, R + 24);
         return (
           <g key={it.label}>
-            <circle cx={x} cy={y} r="3.5" fill="#9bd35f" style={{ transition: 'all 1s cubic-bezier(0.2, 0.8, 0.2, 1)' }} />
-            <text x={lx} y={ly - 4} textAnchor="middle" fontSize="11.5" fontWeight="600" fill="#b4bccb" fontFamily="Inter Variable, sans-serif">
-              {it.label}
+            <circle cx={x} cy={y} r={manga ? 4.5 : 3.5} fill={manga ? '#fffdf6' : '#9bd35f'} stroke={manga ? '#141414' : 'none'} strokeWidth="2.5" style={{ transition: 'all 1s cubic-bezier(0.2, 0.8, 0.2, 1)' }} />
+            <text x={lx} y={ly - 4} textAnchor="middle" fontSize={manga ? 9 : 11.5} fontWeight={manga ? 400 : 600} fill={manga ? '#141414' : '#b4bccb'} fontFamily={manga ? "'Dela Gothic One', sans-serif" : 'Inter Variable, sans-serif'}>
+              {manga ? it.label.toUpperCase() : it.label}
             </text>
-            <text x={lx} y={ly + 10} textAnchor="middle" fontSize="12" fontWeight="800" fill="#eef1f7" fontFamily="Outfit Variable, sans-serif">
+            <text x={lx} y={ly + (manga ? 13 : 10)} textAnchor="middle" fontSize={manga ? 17 : 12} fontWeight="800" fill={manga ? '#e8322b' : '#eef1f7'} stroke={manga ? '#141414' : 'none'} strokeWidth={manga ? 0.8 : 0} fontFamily={manga ? 'Bangers, sans-serif' : 'Outfit Variable, sans-serif'} letterSpacing={manga ? 1 : 0}>
               {it.score}
             </text>
           </g>

@@ -74,6 +74,18 @@ describe('Elo', () => {
     expect(c).toBeLessThanOrEqual(3300);
   });
 
+  it('reste réaliste pour un joueur ~1100 (2 gaffes, 2 erreurs, 3 imprécisions)', () => {
+    const typical = { accuracy: 78, acpl: 60, moves: 34, blunders: 2, mistakes: 2, misses: 1, inaccuracies: 3 };
+    const noPrior = estimateElo(typical);
+    expect(noPrior).toBeGreaterThan(850);
+    expect(noPrior).toBeLessThan(1450);
+    // Avec l'Elo réel (1100) comme a priori, l'estimation reste proche.
+    const withPrior = estimateElo({ ...typical, rating: 1100 });
+    expect(Math.abs(withPrior - 1100)).toBeLessThan(250);
+    // Une partie de maître (Kasparov – Topalov) reste au-dessus de 2500.
+    expect(estimateElo({ accuracy: 97.7, acpl: 8, moves: 40, blunders: 0, mistakes: 0, inaccuracies: 2, rating: 2812 })).toBeGreaterThan(2500);
+  });
+
   it('agrège et projette', () => {
     const agg = aggregateElo([
       { elo: 1500, moves: 30, timestamp: 3 },

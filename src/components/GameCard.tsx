@@ -2,6 +2,7 @@ import { Star, Zap, Timer, Hourglass, CalendarDays, Rabbit } from 'lucide-react'
 import { resultForColor } from '../lib/importer';
 import type { StoredGame, TimeClass } from '../lib/types';
 import { useApp } from '../store/app';
+import { Hanko } from './manga';
 import { accuracyColor, formatDate, PlatformLogo, timeClassLabel } from './ui';
 
 export function TimeClassIcon({ tc, size = 14 }: { tc: TimeClass; size?: number }) {
@@ -70,6 +71,7 @@ export function GameCard({ game, index = 0 }: { game: StoredGame; index?: number
       </div>
       <div className="gc-side">
         <span className={`pill ${res ?? ''}`}>{resLabel}</span>
+        {res && <Hanko result={res} />}
         {analyzing ? (
           <span className="gc-analyzing">
             <span className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} /> {pct}%

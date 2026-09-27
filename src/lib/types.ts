@@ -67,6 +67,8 @@ export interface PlayerSummary {
 
 export interface AnalysisSummary {
   depth: number;
+  /** Version du modèle d'estimation Elo (les résumés plus anciens sont recalculés). */
+  eloModel?: number;
   analyzedAt: number;
   white: PlayerSummary;
   black: PlayerSummary;

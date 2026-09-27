@@ -59,7 +59,7 @@ export function GamesScreen() {
   return (
     <div className="screen page-enter">
       <div className="topbar">
-        <h1>Parties</h1>
+        <h1 data-kana="対局">Parties</h1>
         <button className="icon-btn" onClick={() => setTab('import')} aria-label="Importer">
           <Download size={19} />
         </button>

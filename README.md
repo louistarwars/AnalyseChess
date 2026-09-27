@@ -9,6 +9,17 @@ Application Android d'**analyse de parties d'échecs** inspirée du « Bilan de 
   <img src="docs/stats.jpg" width="23%" alt="Statistiques" />
 </p>
 
+### 🎌 Thème Manga
+
+Un second thème, à choisir dans **Réglages → Thème** : papier crème, encre, trames de points, lignes de vitesse, onomatopées japonaises, tampons *hanko* 勝/負 sur les parties, coach qui réagit à chaque coup… et des **cases d'impact** plein écran sur les coups brillants (神の一手 !), les gaffes (ガーン!!) et les mats (詰み!).
+
+<p align="center">
+  <img src="docs/manga-accueil.jpg" width="23%" alt="Accueil manga" />
+  <img src="docs/manga-bilan.jpg" width="23%" alt="Bilan manga" />
+  <img src="docs/manga-impact.jpg" width="23%" alt="Case d'impact" />
+  <img src="docs/manga-stats.jpg" width="23%" alt="Stats manga" />
+</p>
+
 ## ✨ Fonctionnalités
 
 - **Import automatique** de vos parties **Chess.com** et **Lichess** (il suffit du pseudo), synchronisation au démarrage
@@ -17,11 +28,12 @@ Application Android d'**analyse de parties d'échecs** inspirée du « Bilan de 
   - classification de chaque coup : **Brillant !!**, **Très bon coup !**, Meilleur, Excellent, Bon, **Théorique**, Imprécision ?!, Erreur ?, **Occasion manquée**, **Gaffe ??**, Forcé
   - précision de chaque joueur (formule publique de Lichess), graphique d'évaluation interactif, moments clés
   - **Elo estimé de la partie** pour chaque joueur, précision par phase (ouverture, milieu de jeu, finale)
+    — modèle calibré par simulation : taux d'erreurs pondéré (gaffes, occasions manquées, erreurs, imprécisions), précision et ACPL sur **tous** les coups, avec l'Elo réel du joueur comme a priori
   - commentaires du coach en français (« Cela permet un mat en 3 », « Vous pouviez gagner une tour avec Fxe5 »…)
   - revue coup par coup : barre d'évaluation, flèche du meilleur coup, meilleure suite, **mode exploration** avec Stockfish en direct (3 lignes)
   - **« Réessayer »** : après une erreur, retrouvez vous-même le meilleur coup
 - **Statistiques** : Elo estimé à partir de vos parties analysées, **prédiction à 30 jours**, évolution Elo, **radar de compétences**, **points forts / points faibles** avec conseils, précision par phase, répertoire d'ouvertures (Blancs / Noirs), bilan par cadence
-- Thèmes d'échiquier, 3 jeux de pièces, notation figurines / française / anglaise, sons et vibrations
+- Deux thèmes (Classique sombre, **Manga**), 6 couleurs d'échiquier, 3 jeux de pièces, notation figurines / française / anglaise, sons et vibrations
 
 ## 📱 Installer l'APK
 
@@ -72,5 +84,6 @@ ANALYSIS=1 npx vitest run src/test/famous.analysis.test.ts
 - Code de l'application : GPL v3 (Stockfish et stockfish.js sont sous GPL v3)
 - Pièces : cburnett (GPL v2+), merida (GPL v2+), chessnut (Apache 2.0)
 - Base d'ouvertures : [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0)
+- Polices : Inter, Outfit, Nunito, Dela Gothic One, Bangers, Yuji Boku (SIL Open Font License)
 
 Application indépendante, non affiliée à Chess.com ni à Lichess.

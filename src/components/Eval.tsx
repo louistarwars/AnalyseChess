@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { evalBarPercent, formatScore, winPercent } from '../lib/evaluation';
 import type { Classification, Score } from '../lib/types';
 import { CLASS_HEX } from './ClassIcon';
+import { useIsManga } from '../lib/theme';
+import { mangaColor } from './manga';
 
 /** Barre d'évaluation verticale (façon chess.com). */
 export function EvalBar({ score, orientation = 'w', result }: { score?: Score; orientation?: 'w' | 'b'; result?: string }) {
@@ -29,6 +31,7 @@ interface GraphProps {
 /** Graphique d'évaluation interactif (zone blanche = avantage blanc). */
 export function EvalGraph({ evals, current, onSelect, markers = [], height = 86, phases }: GraphProps) {
   const ref = useRef<SVGSVGElement>(null);
+  const manga = useIsManga();
   const n = evals.length;
   const W = 400;
   const H = 100;
@@ -76,19 +79,19 @@ export function EvalGraph({ evals, current, onSelect, markers = [], height = 86,
             <stop offset="1" stopColor="#d9dee7" />
           </linearGradient>
         </defs>
-        <rect x="0" y="0" width={W} height={H} fill="#262b36" />
+        {!manga && <rect x="0" y="0" width={W} height={H} fill="#262b36" />}
         {phases && phases.middlegame < n && (
           <rect x={xs(phases.middlegame)} y="0" width={Math.max(0, xs(Math.min(phases.endgame, n - 1)) - xs(phases.middlegame))} height={H} fill="rgba(255,255,255,0.03)" />
         )}
-        {n > 1 && <path d={area} fill="url(#egWhite)" />}
-        <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="rgba(120,130,150,0.6)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-        {n > 1 && <path d={d} fill="none" stroke="#7d8799" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />}
-        <line x1={cx} y1="0" x2={cx} y2={H} stroke="#9bd35f" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        {n > 1 && <path d={area} fill={manga ? '#fffdf6' : 'url(#egWhite)'} />}
+        <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke={manga ? '#e8322b' : 'rgba(120,130,150,0.6)'} strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+        {n > 1 && <path d={d} fill="none" stroke={manga ? '#141414' : '#7d8799'} strokeWidth={manga ? 2.5 : 1.2} vectorEffect="non-scaling-stroke" />}
+        <line x1={cx} y1="0" x2={cx} y2={H} stroke={manga ? '#e8322b' : '#9bd35f'} strokeWidth={manga ? 2.5 : 2} vectorEffect="non-scaling-stroke" />
       </svg>
       {markers.map((m) => {
         const p = pts[m.ply + 1];
         if (!p) return null;
-        return <span key={m.ply} className="eg-marker" style={{ left: `${(p[0] / W) * 100}%`, top: `${(p[1] / H) * 100}%`, background: CLASS_HEX[m.cls] }} />;
+        return <span key={m.ply} className="eg-marker" style={{ left: `${(p[0] / W) * 100}%`, top: `${(p[1] / H) * 100}%`, background: manga ? mangaColor(m.cls) : CLASS_HEX[m.cls] }} />;
       })}
       {cur && <span className="eg-current" style={{ left: `${(cur[0] / W) * 100}%`, top: `${(cur[1] / H) * 100}%` }} />}
     </div>

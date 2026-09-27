@@ -6,6 +6,7 @@ import { FAMOUS_GAMES } from '../data/famousGames';
 import { importPgnText } from '../lib/importer';
 import { computeInsights } from '../lib/insights';
 import type { LinkedAccount } from '../lib/types';
+import { useIsManga } from '../lib/theme';
 import { useApp } from '../store/app';
 
 const FAMOUS_BG = [
@@ -70,6 +71,7 @@ export function AccountCard({ acc, single }: { acc: LinkedAccount; single?: bool
 }
 
 export function HomeScreen() {
+  const manga = useIsManga();
   const { games, accounts, setTab, push, queue, current, enqueueAnalysis, showToast, reloadGames } = useApp();
   const insights = useMemo(() => computeInsights(games), [games]);
   const recent = games.slice(0, 5);
@@ -94,8 +96,11 @@ export function HomeScreen() {
           <div className="brand-logo">
             <img src="pieces/cburnett/wN.svg" alt="" />
           </div>
-          <div className="brand-name">
-            Analyse<span>Chess</span>
+          <div>
+            <div className="brand-name">
+              Analyse<span>Chess</span>
+            </div>
+            <div className="brand-kana">チェス解析</div>
           </div>
         </div>
         <button className="icon-btn" onClick={() => setTab('import', { importTab: 'pgn' })} aria-label="Coller un PGN">
@@ -106,14 +111,21 @@ export function HomeScreen() {
       <div className="greeting rise">
         <h2>
           {greeting()}
-          {name ? `, ${name}` : ''} 👋
+          {name ? (
+            <>
+              , <span className="hl-name">{name}</span>
+            </>
+          ) : null}{' '}
+          <span className="wave">👋</span>
         </h2>
         <p>{accounts.length ? 'Prêt à progresser aujourd’hui ?' : 'Analysez vos parties comme sur chess.com, gratuitement.'}</p>
       </div>
 
       {accounts.length === 0 ? (
-        <div className="hero onboard-hero rise" style={{ animationDelay: '60ms' }}>
-          <h2>Découvrez vos coups brillants… et vos gaffes</h2>
+        <div className="hero onboard-hero rise" data-kanji="解析" style={{ animationDelay: '60ms' }}>
+          <h2>
+            Découvrez vos <em>coups brillants</em>… et vos gaffes
+          </h2>
           <p>Liez votre compte pour importer vos parties automatiquement, ou collez un PGN.</p>
           <div className="col">
             <button className="platform-btn" onClick={() => setTab('import', { importTab: 'chesscom' })}>
@@ -149,12 +161,12 @@ export function HomeScreen() {
               )}
             </div>
             {insights.accuracy !== undefined && (
-              <Ring value={insights.accuracy} size={86} stroke={8} color={accuracyColor(insights.accuracy)}>
+              <Ring value={insights.accuracy} size={manga ? 96 : 86} stroke={manga ? 7 : 8} color={accuracyColor(insights.accuracy)}>
                 <div style={{ textAlign: 'center', lineHeight: 1.05 }}>
-                  <div className="num" style={{ fontSize: 20, fontWeight: 800 }}>
+                  <div className="num" style={{ fontSize: manga ? 22 : 20, fontWeight: 800 }}>
                     <CountUp value={insights.accuracy} decimals={1} />
                   </div>
-                  <div style={{ fontSize: 10, opacity: 0.7, fontWeight: 700 }}>PRÉCISION</div>
+                  <div style={{ fontSize: manga ? 8 : 10, opacity: 0.7, fontWeight: 800, letterSpacing: manga ? '0.02em' : undefined }}>PRÉCISION</div>
                 </div>
               </Ring>
             )}

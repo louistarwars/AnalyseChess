@@ -1,5 +1,6 @@
 import { Chess, type Square } from 'chess.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useIsManga } from '../lib/theme';
 import { BOARD_THEMES, pieceUrl } from '../lib/themes';
 import type { Classification } from '../lib/types';
 import { useSettings } from '../store/settings';
@@ -102,7 +103,7 @@ function usePieces(fen: string): PieceItem[] {
   }, [fen]);
 }
 
-function ArrowShape({ a, orientation }: { a: Arrow; orientation: 'w' | 'b' }) {
+function ArrowShape({ a, orientation, manga }: { a: Arrow; orientation: 'w' | 'b'; manga?: boolean }) {
   const s = sqXY(a.from, orientation);
   const e = sqXY(a.to, orientation);
   const cx = (p: { x: number; y: number }) => p.x * 12.5 + 6.25;
@@ -138,16 +139,55 @@ function ArrowShape({ a, orientation }: { a: Arrow; orientation: 'w' | 'b' }) {
   const tip = { x: last.x + Math.cos(ang) * head, y: last.y + Math.sin(ang) * head };
   const left = { x: last.x + Math.cos(ang + Math.PI / 2) * head * 0.85, y: last.y + Math.sin(ang + Math.PI / 2) * head * 0.85 };
   const right = { x: last.x + Math.cos(ang - Math.PI / 2) * head * 0.85, y: last.y + Math.sin(ang - Math.PI / 2) * head * 0.85 };
+  const line = pts.map((p) => `${p.x},${p.y}`).join(' ');
+  const headPts = `${tip.x},${tip.y} ${left.x},${left.y} ${right.x},${right.y}`;
+  if (manga) {
+    // Flèche « encre » : contour noir épais, remplissage plein, ombre décalée
+    const fill = a.color?.includes('120,160,220') ? '#3c7ddb' : a.color?.includes('129,182,76') || !a.color ? '#e8322b' : a.color;
+    return (
+      <g opacity={a.opacity ?? 1}>
+        <g transform="translate(0.7 0.8)" opacity="0.9">
+          <polyline points={line} fill="none" stroke="#141414" strokeWidth={w + 1.3} strokeLinejoin="round" />
+          <polygon points={headPts} fill="#141414" stroke="#141414" strokeWidth="1.3" strokeLinejoin="round" />
+        </g>
+        <polyline points={line} fill="none" stroke="#141414" strokeWidth={w + 1.3} strokeLinejoin="round" />
+        <polygon points={headPts} fill="#141414" stroke="#141414" strokeWidth="1.3" strokeLinejoin="round" />
+        <polyline points={line} fill="none" stroke={fill} strokeWidth={w - 0.1} strokeLinejoin="round" />
+        <polygon points={headPts} fill={fill} />
+      </g>
+    );
+  }
   return (
     <g opacity={a.opacity ?? 1}>
-      <polyline points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color} strokeWidth={w} strokeLinejoin="round" strokeLinecap="butt" />
-      <polygon points={`${tip.x},${tip.y} ${left.x},${left.y} ${right.x},${right.y}`} fill={color} />
+      <polyline points={line} fill="none" stroke={color} strokeWidth={w} strokeLinejoin="round" strokeLinecap="butt" />
+      <polygon points={headPts} fill={color} />
     </g>
+  );
+}
+
+/** Cases sombres en trame de points (thème Manga). */
+function ToneSquares() {
+  const rects = [];
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if ((x + y) % 2 === 1) rects.push(<rect key={`${x}${y}`} x={x} y={y} width="1" height="1" />);
+  return (
+    <svg className="squares-tone" viewBox="0 0 8 8" preserveAspectRatio="none" aria-hidden>
+      <defs>
+        <pattern id="boardTone" width="0.125" height="0.125" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <circle cx="0.0625" cy="0.0625" r="0.036" fill="#141414" />
+        </pattern>
+      </defs>
+      <g fill="#cfc7b3">{rects}</g>
+      <g fill="url(#boardTone)" opacity="0.55">
+        {rects}
+      </g>
+      <path d="M0 0H8V8H0Z" fill="none" stroke="#141414" strokeWidth="0.03" />
+    </svg>
   );
 }
 
 export function Board({ fen, orientation = 'w', lastMove, arrows = [], badge, interactive = false, onMove, className }: Props) {
   const { boardTheme, pieceSet, showCoords } = useSettings();
+  const manga = useIsManga();
   const theme = BOARD_THEMES.find((t) => t.id === boardTheme) ?? BOARD_THEMES[0];
   const pieces = usePieces(fen);
   const ref = useRef<HTMLDivElement>(null);
@@ -262,7 +302,7 @@ export function Board({ fen, orientation = 'w', lastMove, arrows = [], badge, in
       onPointerUp={onPointerUp}
       onPointerCancel={() => setDrag(null)}
     >
-      <div className="squares" />
+      <div className="squares">{manga && <ToneSquares />}</div>
       {showCoords && (
         <div className="coords">
           {Array.from({ length: 8 }, (_, i) => {
@@ -304,7 +344,7 @@ export function Board({ fen, orientation = 'w', lastMove, arrows = [], badge, in
       {arrows.length > 0 && (
         <svg className="arrows" viewBox="0 0 100 100">
           {arrows.map((a, i) => (
-            <ArrowShape key={`${a.from}${a.to}${i}`} a={a} orientation={orientation} />
+            <ArrowShape key={`${a.from}${a.to}${i}`} a={a} orientation={orientation} manga={manga} />
           ))}
         </svg>
       )}
