@@ -926,3 +926,27 @@ textarea.textarea:focus {
 .switch.on::after {
   transform: translateX(20px);
 }
+
+.radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.2s;
+}
+
+.radio.on {
+  border-color: var(--accent);
+}
+
+.radio.on::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-hi);
+  box-shadow: 0 0 8px rgba(155, 211, 95, 0.7);
+}

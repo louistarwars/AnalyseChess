@@ -4,6 +4,7 @@ import { Board } from '../../components/Board';
 import { EvalBar } from '../../components/Eval';
 import { Ring } from '../../components/ui';
 import { getAnalysis } from '../../lib/db';
+import { shareText } from '../../lib/native';
 import { parseGame } from '../../lib/pgn';
 import type { GameAnalysis } from '../../lib/types';
 import { onAnalysisDone, useApp } from '../../store/app';
@@ -69,28 +70,32 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
       <button className="icon-btn" onClick={pop} aria-label="Retour">
         <ArrowLeft size={20} />
       </button>
-      <div className="grow">
-        <h1 className="review-title">{analysis ? 'Bilan de la partie' : 'Analyse'}</h1>
-        <div className="dim tiny ellipsis">
-          {game.white} – {game.black}
+      {analysis ? (
+        <div className="segmented review-tabs grow">
+          <button className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>
+            <BarChart3 size={16} /> Bilan
+          </button>
+          <button className={mode === 'moves' ? 'active' : ''} onClick={() => setMode('moves')}>
+            <ListChecks size={16} /> Coups
+          </button>
         </div>
-      </div>
-      <button className="icon-btn ghost" onClick={() => toggleFavorite(game.id)} aria-label="Favori">
+      ) : (
+        <div className="grow" style={{ minWidth: 0 }}>
+          <h1 className="review-title">Analyse</h1>
+          <div className="dim tiny ellipsis">
+            {game.white} – {game.black}
+          </div>
+        </div>
+      )}
+      <button className="icon-btn ghost small-icon" onClick={() => toggleFavorite(game.id)} aria-label="Favori">
         <Star size={20} fill={game.favorite ? '#f5c04a' : 'none'} color={game.favorite ? '#f5c04a' : 'currentColor'} />
       </button>
       <button
-        className="icon-btn ghost"
+        className="icon-btn ghost small-icon"
         aria-label="Partager"
         onClick={async () => {
-          try {
-            if (navigator.share) await navigator.share({ title: `${game.white} – ${game.black}`, text: game.pgn });
-            else {
-              await navigator.clipboard.writeText(game.pgn);
-              showToast('PGN copié dans le presse-papiers', 'success');
-            }
-          } catch {
-            /* annulé */
-          }
+          const r = await shareText(`${game.white} – ${game.black}`, game.pgn);
+          if (r === 'copied') showToast('PGN copié dans le presse-papiers', 'success');
         }}
       >
         <Share2 size={19} />
@@ -159,14 +164,6 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
   return (
     <div className="screen full review-screen">
       {header}
-      <div className="segmented review-tabs">
-        <button className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>
-          <BarChart3 size={16} /> Bilan
-        </button>
-        <button className={mode === 'moves' ? 'active' : ''} onClick={() => setMode('moves')}>
-          <ListChecks size={16} /> Coups
-        </button>
-      </div>
       {mode === 'summary' ? (
         <ReviewSummary
           game={game}

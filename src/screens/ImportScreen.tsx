@@ -5,6 +5,7 @@ import { PlatformLogo } from '../components/ui';
 import { networkErrorMessage } from '../lib/api/http';
 import { deleteAccount } from '../lib/db';
 import { importPgnText, linkAccount } from '../lib/importer';
+import { readClipboard } from '../lib/native';
 import { useApp } from '../store/app';
 
 const COUNTS = [50, 100, 200, 500];
@@ -160,12 +161,9 @@ function PgnImporter() {
           <button
             className="btn secondary grow"
             onClick={async () => {
-              try {
-                const t = await navigator.clipboard.readText();
-                if (t) setText(t);
-              } catch {
-                showToast('Presse-papiers inaccessible : collez manuellement', 'error');
-              }
+              const t = await readClipboard();
+              if (t) setText(t);
+              else showToast('Presse-papiers vide ou inaccessible : collez manuellement', 'error');
             }}
           >
             <ClipboardPaste size={18} /> Coller
@@ -177,7 +175,6 @@ function PgnImporter() {
         <input
           ref={fileRef}
           type="file"
-          accept=".pgn,.txt,application/x-chess-pgn,text/plain"
           style={{ display: 'none' }}
           onChange={async (e) => {
             const f = e.target.files?.[0];

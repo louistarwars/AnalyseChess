@@ -221,7 +221,7 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
         ))}
       </div>
 
-      <EvalGraph evals={analysis.evals} current={pos} onSelect={(p) => go(p, false)} markers={markers} height={54} phases={analysis.phases} />
+      <EvalGraph evals={analysis.evals} current={pos} onSelect={(p) => go(p, false)} markers={markers} height={46} phases={analysis.phases} />
 
       <div className="controls">
         <button className="ctrl-btn" onClick={() => setOrientation(orientation === 'w' ? 'b' : 'w')} aria-label="Retourner">

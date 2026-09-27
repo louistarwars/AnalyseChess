@@ -34,7 +34,7 @@ export function SettingsScreen() {
       </div>
 
       <div className="card tight" style={{ marginBottom: 18 }}>
-        <Board fen="r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4" lastMove={{ from: 'd1', to: 'h5' }} arrows={[{ from: 'h5', to: 'f7' }]} badge={{ square: 'f7', cls: 'brilliant' }} />
+        <Board fen="r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4" lastMove={{ from: 'h5', to: 'f7' }} badge={{ square: 'f7', cls: 'best' }} />
       </div>
 
       <div className="section-title" style={{ marginTop: 0 }}>
@@ -111,7 +111,7 @@ export function SettingsScreen() {
                   Profondeur {d.depth} · {d.hint}
                 </div>
               </div>
-              <span className={`switch ${s.depthPreset === k ? 'on' : ''}`} style={{ width: 22, height: 22, borderRadius: 99 }} />
+              <span className={`radio ${s.depthPreset === k ? 'on' : ''}`} />
             </button>
           ))}
         </div>

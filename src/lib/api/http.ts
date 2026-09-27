@@ -14,9 +14,11 @@ export class HttpError extends Error {
  * via fetch dans le navigateur.
  */
 export async function httpGet(url: string, accept = 'application/json'): Promise<{ status: number; data: unknown }> {
-  const headers = { Accept: accept };
+  const headers: Record<string, string> = { Accept: accept };
   if (Capacitor.isNativePlatform()) {
-    const res = await CapacitorHttp.get({ url, headers, responseType: 'text', connectTimeout: 20000, readTimeout: 60000 });
+    // L'API Chess.com demande un User-Agent identifiable.
+    headers['User-Agent'] = 'AnalyseChess/1.0 (Android; +https://github.com/louistarwars/AnalyseChess)';
+    const res = await CapacitorHttp.get({ url, headers, responseType: 'text', connectTimeout: 20000, readTimeout: 90000 });
     return { status: res.status, data: res.data };
   }
   const res = await fetch(url, { headers });
