@@ -142,6 +142,9 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
                   <div className="progress" style={{ marginTop: 12 }}>
                     <div style={{ width: `${pct}%` }} />
                   </div>
+                  <p className="dim tiny" style={{ margin: '10px 0 0' }}>
+                    Vous pouvez quitter cet écran : l’analyse continue en arrière-plan.
+                  </p>
                 </div>
               </>
             ) : (

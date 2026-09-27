@@ -5,9 +5,9 @@ import type { NotationStyle } from '../lib/notation';
 export type DepthPreset = 'fast' | 'standard' | 'deep';
 
 export const DEPTHS: Record<DepthPreset, { depth: number; label: string; hint: string }> = {
-  fast: { depth: 11, label: 'Rapide', hint: '≈ 20 s par partie' },
-  standard: { depth: 14, label: 'Standard', hint: '≈ 1 min par partie' },
-  deep: { depth: 17, label: 'Approfondie', hint: '≈ 3 min par partie' },
+  fast: { depth: 10, label: 'Rapide', hint: '≈ 15 s par partie' },
+  standard: { depth: 13, label: 'Standard', hint: '≈ 45 s par partie' },
+  deep: { depth: 16, label: 'Approfondie', hint: '≈ 2 min par partie' },
 };
 
 interface SettingsState {

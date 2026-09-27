@@ -45,7 +45,7 @@ export function PlatformLogo({ platform, size = 20 }: { platform: 'chesscom' | '
   if (platform === 'chesscom') return <ChesscomLogo size={size} />;
   if (platform === 'lichess') return <LichessLogo size={size} />;
   return (
-    <span className="platform-dot" style={{ width: size, height: size, background: 'var(--surface-3)', borderRadius: size * 0.3, fontSize: size * 0.42, fontWeight: 800 }}>
+    <span className="platform-dot" style={{ width: size, height: size, background: 'linear-gradient(160deg, #3a4254, #232937)', borderRadius: size * 0.3, fontSize: size * 0.3, fontWeight: 800, letterSpacing: '-0.02em' }}>
       PGN
     </span>
   );

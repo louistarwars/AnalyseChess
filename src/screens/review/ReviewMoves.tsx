@@ -13,6 +13,7 @@ import { tapFeedback } from '../../lib/native';
 import { playMoveSound, soundForSan } from '../../lib/sound';
 import { uciLineToSan } from '../../lib/tactics';
 import type { GameAnalysis, PositionEval, StoredGame } from '../../lib/types';
+import { useApp } from '../../store/app';
 import { useSettings } from '../../store/settings';
 
 interface ExploreMove {
@@ -224,7 +225,19 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
   };
   const top = orientation === 'w' ? 'b' : 'w';
   const turn = fen.split(' ')[1] as 'w' | 'b';
-  const bar = (c: 'w' | 'b') => <PlayerBar name={c === 'w' ? game.white : game.black} elo={c === 'w' ? game.whiteElo : game.blackElo} color={c} fen={fen} clock={clockFor(c)} active={turn === c && !explore} />;
+  const accounts = useApp((st) => st.accounts);
+  const myAvatar = accounts.find((a) => a.key === game.accountKey)?.avatar;
+  const bar = (c: 'w' | 'b') => (
+    <PlayerBar
+      name={c === 'w' ? game.white : game.black}
+      elo={c === 'w' ? game.whiteElo : game.blackElo}
+      color={c}
+      fen={fen}
+      clock={clockFor(c)}
+      active={turn === c && !explore}
+      avatar={game.userColor === c ? myAvatar : undefined}
+    />
+  );
 
   const markers = useMemo(() => moves.filter((m) => ['brilliant', 'great', 'blunder', 'miss', 'mistake'].includes(m.classification)).map((m) => ({ ply: m.ply, cls: m.classification })), [moves]);
 

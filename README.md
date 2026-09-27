@@ -2,6 +2,13 @@
 
 Application Android d'**analyse de parties d'échecs** inspirée du « Bilan de partie » de Chess.com. Tout est calculé **sur le téléphone** par Stockfish 19 : vos parties ne sont envoyées à aucun serveur.
 
+<p align="center">
+  <img src="docs/accueil.jpg" width="23%" alt="Accueil" />
+  <img src="docs/bilan.jpg" width="23%" alt="Bilan de partie" />
+  <img src="docs/revue.jpg" width="23%" alt="Revue coup par coup" />
+  <img src="docs/stats.jpg" width="23%" alt="Statistiques" />
+</p>
+
 ## ✨ Fonctionnalités
 
 - **Import automatique** de vos parties **Chess.com** et **Lichess** (il suffit du pseudo), synchronisation au démarrage
@@ -12,6 +19,7 @@ Application Android d'**analyse de parties d'échecs** inspirée du « Bilan de 
   - **Elo estimé de la partie** pour chaque joueur, précision par phase (ouverture, milieu de jeu, finale)
   - commentaires du coach en français (« Cela permet un mat en 3 », « Vous pouviez gagner une tour avec Fxe5 »…)
   - revue coup par coup : barre d'évaluation, flèche du meilleur coup, meilleure suite, **mode exploration** avec Stockfish en direct (3 lignes)
+  - **« Réessayer »** : après une erreur, retrouvez vous-même le meilleur coup
 - **Statistiques** : Elo estimé à partir de vos parties analysées, **prédiction à 30 jours**, évolution Elo, **radar de compétences**, **points forts / points faibles** avec conseils, précision par phase, répertoire d'ouvertures (Blancs / Noirs), bilan par cadence
 - Thèmes d'échiquier, 3 jeux de pièces, notation figurines / française / anglaise, sons et vibrations
 

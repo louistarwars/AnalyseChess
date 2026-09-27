@@ -4,6 +4,7 @@ import { EvalGraph } from '../../components/Eval';
 import { Avatar, CountUp, San } from '../../components/ui';
 import { moveLabel } from '../../lib/coach';
 import type { Classification, GameAnalysis, StoredGame } from '../../lib/types';
+import { useApp } from '../../store/app';
 
 const TABLE: Classification[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'];
 
@@ -31,6 +32,7 @@ export function ReviewSummary({
   onDelete: () => void;
 }) {
   const { white, black } = analysis.summary;
+  const accounts = useApp((st) => st.accounts);
   const keyMoves = analysis.moves.filter((m) => ['brilliant', 'great', 'blunder', 'miss', 'mistake'].includes(m.classification));
   const markers = keyMoves.map((m) => ({ ply: m.ply, cls: m.classification }));
   const resultTxt = game.result === '1-0' ? '1-0' : game.result === '0-1' ? '0-1' : game.result === '1/2-1/2' ? '½-½' : '*';
@@ -58,9 +60,10 @@ export function ReviewSummary({
           const s = c === 'w' ? white : black;
           const name = c === 'w' ? game.white : game.black;
           const elo = c === 'w' ? game.whiteElo : game.blackElo;
+          const avatar = game.userColor === c ? accounts.find((a) => a.key === game.accountKey)?.avatar : undefined;
           return (
             <div key={c} className="player-col">
-              <Avatar name={name} size={48} />
+              <Avatar name={name} size={48} src={avatar} />
               <div className="pc-name ellipsis">{name}</div>
               <div className="dim tiny">{elo ? `${elo} Elo` : c === 'w' ? 'Blancs' : 'Noirs'}</div>
               <div className={`acc-box ${c === 'w' ? 'light' : 'dark'}`}>
