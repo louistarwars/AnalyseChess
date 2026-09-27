@@ -1,0 +1,161 @@
+.board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: visible;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow:
+    0 18px 38px -14px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.board .squares {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background-color: var(--light);
+  /* motif en damier : a8 (coin haut-gauche) est une case claire */
+  background-image: conic-gradient(var(--dark) 0 25%, transparent 0 50%, var(--dark) 0 75%, transparent 0);
+  background-size: 25% 25%;
+}
+
+.board .coords {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(8px, 2.6vw, 12px);
+  z-index: 1;
+}
+
+.board .coords .rank {
+  position: absolute;
+  left: 0.35%;
+  margin-top: 0.3%;
+  line-height: 1;
+}
+
+.board .coords .file {
+  position: absolute;
+  bottom: 0.4%;
+  width: 12.5%;
+  text-align: right;
+  padding-right: 0.45%;
+  line-height: 1;
+}
+
+.board .hl {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  opacity: 0.92;
+}
+
+.board .check-glow {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  background: radial-gradient(circle, rgba(255, 30, 20, 0.95) 0%, rgba(230, 20, 10, 0.6) 35%, rgba(200, 0, 0, 0) 72%);
+}
+
+.board .pieces {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.board .piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12.5%;
+  height: 12.5%;
+  transition: transform 0.19s cubic-bezier(0.25, 0.8, 0.3, 1);
+  will-change: transform;
+  pointer-events: none;
+  filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.28));
+}
+
+.board .piece.dragging {
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.45));
+}
+
+.board .dot {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 0 17%, transparent 18%);
+}
+
+.board .dot.capture {
+  background: radial-gradient(circle, transparent 0 58%, rgba(0, 0, 0, 0.2) 59% 72%, transparent 73%);
+}
+
+.board .arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.board .badge {
+  position: absolute;
+  width: 7%;
+  height: 7%;
+  z-index: 5;
+  transform: translate(-62%, -38%);
+  pointer-events: none;
+  animation: badgePop 0.42s cubic-bezier(0.25, 1.6, 0.45, 1) both;
+}
+
+.board .badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes badgePop {
+  0% {
+    transform: translate(-62%, -38%) scale(0.2);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-62%, -38%) scale(1);
+    opacity: 1;
+  }
+}
+
+.board .promo {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(8, 10, 14, 0.72);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3%;
+  border-radius: 6px;
+  animation: fadeIn 0.18s ease;
+}
+
+.board .promo button {
+  width: 19%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f4f4f4, #c9ccd2);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+.board .promo img {
+  width: 82%;
+}

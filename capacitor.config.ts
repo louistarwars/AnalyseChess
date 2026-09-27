@@ -16,10 +16,10 @@ const config: CapacitorConfig = {
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
     },
-    StatusBar: {
+    SystemBars: {
+      insetsHandling: 'css',
       style: 'DARK',
-      backgroundColor: '#0b0d12',
-      overlaysWebView: false,
+      initialViewportFitValueHint: 'cover',
     },
   },
 };

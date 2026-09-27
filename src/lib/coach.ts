@@ -5,6 +5,12 @@ import { toFrenchSan } from './notation';
 
 const pick = <T,>(arr: T[], seed: number): T => arr[Math.abs(seed) % arr.length];
 
+function fmtEval(sc: { cp: number; mate?: number }): string {
+  if (sc.mate !== undefined) return sc.mate === 0 ? 'mat' : `mat en ${Math.abs(sc.mate)}`;
+  const v = sc.cp / 100;
+  return `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1).replace('.', ',')}`;
+}
+
 export function colorName(c: Color, plural = true): string {
   return c === 'w' ? (plural ? 'les Blancs' : 'Blancs') : plural ? 'les Noirs' : 'Noirs';
 }
@@ -34,7 +40,8 @@ export function coachComment({ ply, san, bestSan, opening, res }: CoachInput): s
     if (res.replyLoss >= 2 && res.lostPiece) return ` L'adversaire peut gagner ${PIECE_ARTICLE_FR[res.lostPiece]}.`;
     if (res.winAfter < 20 && res.winBefore >= 40) return ' La position devient perdante.';
     if (res.winBefore >= 60 && res.winAfter < 55) return " Vous perdez l'avantage.";
-    return '';
+    if (res.winBefore >= 45 && res.winAfter < 45 && res.winAfter >= 20) return " L'adversaire prend l'avantage.";
+    return ` L'évaluation passe de ${fmtEval(res.scoreBefore)} à ${fmtEval(res.scoreAfter)}.`;
   };
 
   switch (res.classification) {
