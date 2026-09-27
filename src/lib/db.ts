@@ -78,6 +78,13 @@ export async function getAnalysis(gameId: string) {
   return (await db()).get('analyses', gameId);
 }
 
+export async function deleteAnalysis(gameId: string) {
+  const d = await db();
+  await d.delete('analyses', gameId);
+  const g = await d.get('games', gameId);
+  if (g) await d.put('games', { ...g, summary: undefined });
+}
+
 export async function saveAnalysis(a: GameAnalysis) {
   const d = await db();
   await d.put('analyses', a);

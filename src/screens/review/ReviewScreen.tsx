@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Board } from '../../components/Board';
 import { EvalBar } from '../../components/Eval';
 import { Ring } from '../../components/ui';
-import { getAnalysis } from '../../lib/db';
+import { deleteAnalysis, getAnalysis } from '../../lib/db';
 import { shareText } from '../../lib/native';
 import { parseGame } from '../../lib/pgn';
 import type { GameAnalysis } from '../../lib/types';
@@ -17,7 +17,7 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
   const game = useApp((s) => s.games.find((g) => g.id === gameId));
   const current = useApp((s) => s.current);
   const queue = useApp((s) => s.queue);
-  const { pop, enqueueAnalysis, toggleFavorite, showToast } = useApp();
+  const { pop, enqueueAnalysis, toggleFavorite, showToast, removeGame } = useApp();
   const { autoAnalyze, depthPreset } = useSettings();
   const [analysis, setAnalysis] = useState<GameAnalysis | null | undefined>(undefined);
   const [mode, setMode] = useState<'summary' | 'moves'>(initialPly !== undefined ? 'moves' : 'summary');
@@ -171,6 +171,18 @@ export function ReviewScreen({ gameId, initialPly }: { gameId: string; initialPl
           onStart={(p) => {
             setPly(p ?? 0);
             setMode('moves');
+          }}
+          onReanalyze={async () => {
+            await deleteAnalysis(gameId);
+            await useApp.getState().reloadGames();
+            setAnalysis(null);
+            enqueueAnalysis([gameId], true);
+          }}
+          onDelete={async () => {
+            if (!confirm('Supprimer cette partie et son analyse ?')) return;
+            await removeGame(gameId);
+            pop();
+            showToast('Partie supprimée');
           }}
         />
       ) : (

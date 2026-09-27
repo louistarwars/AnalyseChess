@@ -2,6 +2,7 @@ import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { BarChart3, CheckCircle2, Home, Plus, Settings, SquareStack, XCircle, Info } from 'lucide-react';
 import { useEffect } from 'react';
+import { runBackHandlers } from './lib/back';
 import { isNative, tapFeedback } from './lib/native';
 import { loadOpenings } from './lib/openings';
 import { GamesScreen } from './screens/GamesScreen';
@@ -70,6 +71,7 @@ export default function App() {
     void loadOpenings();
     if (!isNative) return;
     const sub = CapApp.addListener('backButton', () => {
+      if (runBackHandlers()) return;
       if (!useApp.getState().pop()) void CapApp.exitApp();
     });
     return () => {

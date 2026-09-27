@@ -49,6 +49,8 @@ export function onAnalysisDone(cb: (a: GameAnalysis) => void) {
 }
 
 let abort: AbortController | null = null;
+/** Parties demandées explicitement (ouvertes) : analysées à la profondeur choisie. Les autres (lot) en rapide. */
+const priority = new Set<string>();
 let running = false;
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -95,6 +97,7 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   enqueueAnalysis: (ids, front = false) => {
+    if (front) ids.forEach((id) => priority.add(id));
     const { queue, current } = get();
     const todo = ids.filter((id) => id !== current?.gameId);
     let q = queue.filter((x) => !todo.includes(x));
@@ -164,7 +167,8 @@ async function runQueue() {
       const game = useApp.getState().games.find((g) => g.id === gameId) ?? (await db.getGame(gameId));
       if (!game) continue;
       abort = new AbortController();
-      const depth = DEPTHS[useSettings.getState().depthPreset].depth;
+      const chosen = DEPTHS[useSettings.getState().depthPreset].depth;
+      const depth = priority.has(gameId) ? chosen : Math.min(chosen, 12);
       let last = 0;
       try {
         const analysis = await analyzeGame(gameId, game.pgn, {
@@ -180,6 +184,7 @@ async function runQueue() {
           },
         });
         await db.saveAnalysis(analysis);
+        priority.delete(gameId);
         useApp.setState({
           games: useApp.getState().games.map((g) => (g.id === gameId ? { ...g, summary: analysis.summary, opening: analysis.opening?.name ?? g.opening, eco: g.eco ?? analysis.opening?.eco } : g)),
         });

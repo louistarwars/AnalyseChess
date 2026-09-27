@@ -1,11 +1,12 @@
 import { Chess } from 'chess.js';
-import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Cpu, Lightbulb, Pause, Play, RefreshCw, Undo2 } from 'lucide-react';
+import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Cpu, Crosshair, Lightbulb, Pause, Play, RefreshCw, RotateCcw, Undo2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Board, type Arrow } from '../../components/Board';
 import { ClassIcon, CLASS_META } from '../../components/ClassIcon';
 import { EvalBar, EvalGraph } from '../../components/Eval';
 import { PlayerBar } from '../../components/PlayerBar';
 import { San } from '../../components/ui';
+import { pushBackHandler } from '../../lib/back';
 import { getLiveEngine } from '../../lib/engine';
 import { formatScore } from '../../lib/evaluation';
 import { tapFeedback } from '../../lib/native';
@@ -29,12 +30,24 @@ interface Explore {
   label?: string;
 }
 
+interface Retry {
+  base: number; // index de la position avant le coup à rejouer
+  status: 'try' | 'ok' | 'ko';
+  fen?: string;
+  san?: string;
+  from?: string;
+  to?: string;
+}
+
 const GOOD = new Set(['brilliant', 'great', 'best', 'book', 'forced']);
+const RETRYABLE = new Set(['inaccuracy', 'mistake', 'miss', 'blunder']);
 
 export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialOrientation }: { game: StoredGame; analysis: GameAnalysis; ply: number; setPly: (p: number) => void; orientation: 'w' | 'b' }) {
   const { sounds, showArrows } = useSettings();
   const [orientation, setOrientation] = useState(initialOrientation);
   const [explore, setExplore] = useState<Explore | null>(null);
+  const [retry, setRetry] = useState<Retry | null>(null);
+  const [shake, setShake] = useState(false);
   const [live, setLive] = useState<PositionEval | null>(null);
   const [engineOn, setEngineOn] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -49,6 +62,7 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
       const np = Math.max(0, Math.min(total, p));
       if (np === pos) return;
       setExplore(null);
+      setRetry(null);
       setPly(np);
       tapFeedback();
       if (withSound && sounds && np === pos + 1) playMoveSound(soundForSan(moves[np - 1].san));
@@ -79,6 +93,16 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
     return () => window.removeEventListener('keydown', onKey);
   }, [go, pos, total]);
 
+  // Bouton retour Android : quitte d'abord l'exploration / le mode « Réessayer »
+  useEffect(() => {
+    if (!explore && !retry) return;
+    return pushBackHandler(() => {
+      if (retry) setRetry(null);
+      else setExplore(null);
+      return true;
+    });
+  }, [explore, retry]);
+
   // Défilement automatique de la bande de coups
   useEffect(() => {
     const el = stripRef.current?.querySelector('.ms-move.current') as HTMLElement | null;
@@ -88,10 +112,10 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
   // Position affichée
   const exploreMove = explore && explore.idx > 0 ? explore.moves[explore.idx - 1] : undefined;
   const fenAt = (p: number) => (p === 0 ? analysis.startFen : moves[p - 1].fenAfter);
-  const fen = explore ? (exploreMove ? exploreMove.fen : fenAt(explore.base)) : fenAt(pos);
+  const fen = retry ? (retry.status === 'ok' && retry.fen ? retry.fen : fenAt(retry.base)) : explore ? (exploreMove ? exploreMove.fen : fenAt(explore.base)) : fenAt(pos);
 
   // Moteur en direct (exploration ou bouton « moteur »)
-  const liveActive = !!explore || engineOn;
+  const liveActive = (!!explore || engineOn) && !retry;
   useEffect(() => {
     if (!liveActive) {
       setLive(null);
@@ -114,6 +138,21 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
     try {
       res = c.move(m);
     } catch {
+      return;
+    }
+    if (retry) {
+      if (retry.status === 'ok') return;
+      const uci = res.from + res.to + (res.promotion ?? '');
+      if (uci === moves[retry.base].bestMove) {
+        if (sounds) playMoveSound(soundForSan(res.san));
+        tapFeedback('medium');
+        setRetry({ ...retry, status: 'ok', fen: res.after, san: res.san, from: res.from, to: res.to });
+      } else {
+        tapFeedback('medium');
+        setShake(true);
+        setTimeout(() => setShake(false), 450);
+        setRetry({ ...retry, status: 'ko', san: res.san });
+      }
       return;
     }
     if (sounds) playMoveSound(soundForSan(res.san));
@@ -147,16 +186,35 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
 
   // Flèches
   const arrows: Arrow[] = [];
-  if (explore || engineOn) {
+  if (retry) {
+    /* pas d'indice pendant l'exercice */
+  } else if (explore || engineOn) {
     live?.lines.slice(0, 3).forEach((l, i) => arrows.push({ from: l.move.slice(0, 2), to: l.move.slice(2, 4), color: i === 0 ? 'rgba(129,182,76,0.9)' : 'rgba(120,160,220,0.75)', opacity: i === 0 ? 1 : 0.55, width: i === 0 ? 2.4 : 1.8 }));
   } else if (showArrows && move && move.bestMove && !GOOD.has(move.classification)) {
     arrows.push({ from: move.bestMove.slice(0, 2), to: move.bestMove.slice(2, 4), color: 'rgba(129,182,76,0.88)' });
   }
 
-  const lastMove = exploreMove ? { from: exploreMove.from, to: exploreMove.to } : !explore && move ? { from: move.uci.slice(0, 2), to: move.uci.slice(2, 4) } : undefined;
-  const badge = !explore && move ? { square: move.uci.slice(2, 4), cls: move.classification, key: pos } : undefined;
+  const prevOfRetry = retry && retry.base > 0 ? moves[retry.base - 1] : undefined;
+  const lastMove = retry
+    ? retry.status === 'ok' && retry.from && retry.to
+      ? { from: retry.from, to: retry.to }
+      : prevOfRetry
+        ? { from: prevOfRetry.uci.slice(0, 2), to: prevOfRetry.uci.slice(2, 4) }
+        : undefined
+    : exploreMove
+      ? { from: exploreMove.from, to: exploreMove.to }
+      : !explore && move
+        ? { from: move.uci.slice(0, 2), to: move.uci.slice(2, 4) }
+        : undefined;
+  const badge = retry
+    ? retry.status === 'ok' && retry.to
+      ? { square: retry.to, cls: 'best' as const, key: 'retry' }
+      : undefined
+    : !explore && move
+      ? { square: move.uci.slice(2, 4), cls: move.classification, key: pos }
+      : undefined;
 
-  const barScore = liveActive && live?.lines[0] ? live.lines[0].score : analysis.evals[pos];
+  const barScore = retry ? analysis.evals[retry.status === 'ok' ? retry.base + 1 : retry.base] : liveActive && live?.lines[0] ? live.lines[0].score : analysis.evals[pos];
 
   // Pendules à la position courante
   const clockFor = (c: 'w' | 'b') => {
@@ -173,13 +231,30 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
   return (
     <div className="review-moves">
       {bar(top)}
-      <div className="board-row">
-        <EvalBar score={barScore} orientation={orientation} result={pos === total ? game.result : undefined} />
+      <div className={`board-row ${shake ? 'shake' : ''}`}>
+        <EvalBar score={barScore} orientation={orientation} result={pos === total && !retry && !explore ? game.result : undefined} />
         <Board fen={fen} orientation={orientation} lastMove={lastMove} arrows={arrows} badge={badge} interactive onMove={onBoardMove} />
       </div>
       {bar(orientation)}
 
-      {explore ? (
+      {retry ? (
+        <RetryCard
+          retry={retry}
+          color={moves[retry.base].color}
+          played={moves[retry.base].san}
+          bestSan={moves[retry.base].bestSan}
+          onRetry={() => setRetry({ base: retry.base, status: 'try' })}
+          onSolution={() => {
+            setRetry(null);
+            showBestLine();
+          }}
+          onExit={() => setRetry(null)}
+          onContinue={() => {
+            setRetry(null);
+            go(retry.base + 2);
+          }}
+        />
+      ) : explore ? (
         <div className="coach-card explore-card">
           <div className="row">
             <Cpu size={18} color="var(--accent-hi)" />
@@ -199,7 +274,7 @@ export function ReviewMoves({ game, analysis, ply, setPly, orientation: initialO
           <EngineLines ev={live} fen={fen} />
         </div>
       ) : (
-        <CoachCard analysis={analysis} pos={pos} onBest={showBestLine} />
+        <CoachCard analysis={analysis} pos={pos} onBest={showBestLine} onRetry={() => setRetry({ base: pos - 1, status: 'try' })} />
       )}
 
       {!explore && engineOn && (
@@ -293,7 +368,7 @@ function EngineLines({ ev, fen }: { ev: PositionEval | null; fen: string }) {
   );
 }
 
-function CoachCard({ analysis, pos, onBest }: { analysis: GameAnalysis; pos: number; onBest: () => void }) {
+function CoachCard({ analysis, pos, onBest, onRetry }: { analysis: GameAnalysis; pos: number; onBest: () => void; onRetry: () => void }) {
   if (pos === 0) {
     return (
       <div className="coach-card">
@@ -326,11 +401,98 @@ function CoachCard({ analysis, pos, onBest }: { analysis: GameAnalysis; pos: num
           </div>
           <div className="cc-text">{m.comment}</div>
           {bad && (
-            <button className="best-btn" onClick={onBest}>
-              <ClassIcon cls="best" size={16} /> Meilleur : <San san={m.bestSan!} color={m.color} />
-              <span className="dim">· voir la suite</span>
-            </button>
+            <div className="cc-actions">
+              {RETRYABLE.has(m.classification) && (
+                <button className="best-btn retry-btn" onClick={onRetry}>
+                  <RotateCcw size={15} /> Réessayer
+                </button>
+              )}
+              <button className="best-btn" onClick={onBest}>
+                <ClassIcon cls="best" size={16} /> <San san={m.bestSan!} color={m.color} />
+                <span className="dim">· suite</span>
+              </button>
+            </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RetryCard({
+  retry,
+  color,
+  played,
+  bestSan,
+  onRetry,
+  onSolution,
+  onExit,
+  onContinue,
+}: {
+  retry: Retry;
+  color: 'w' | 'b';
+  played: string;
+  bestSan?: string;
+  onRetry: () => void;
+  onSolution: () => void;
+  onExit: () => void;
+  onContinue: () => void;
+}) {
+  const side = color === 'w' ? 'les Blancs' : 'les Noirs';
+  if (retry.status === 'ok') {
+    return (
+      <div className="coach-card" style={{ ['--cls' as string]: 'var(--c-best)' }} key="ok">
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <ClassIcon cls="best" size={34} shadow />
+          <div className="grow">
+            <div className="cc-title">Bien joué !</div>
+            <div className="cc-text">
+              <San san={retry.san ?? bestSan ?? ''} color={color} /> était bien le meilleur coup.
+            </div>
+            <div className="cc-actions">
+              <button className="best-btn" onClick={onContinue}>
+                Continuer la revue <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="coach-card retry-card" style={{ ['--cls' as string]: retry.status === 'ko' ? 'var(--c-blunder)' : 'var(--blue)' }} key={retry.status + (retry.san ?? '')}>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        {retry.status === 'ko' ? <XCircle size={32} color="#ff7769" style={{ flexShrink: 0 }} /> : <Crosshair size={32} color="#7fb2ff" style={{ flexShrink: 0 }} />}
+        <div className="grow">
+          <div className="cc-title">
+            {retry.status === 'ko' ? (
+              <>
+                <San san={retry.san ?? ''} color={color} /> n'est pas le meilleur coup
+              </>
+            ) : (
+              `Trouvez le meilleur coup pour ${side}`
+            )}
+          </div>
+          <div className="cc-text">
+            {retry.status === 'ko' ? 'Cherchez encore : pensez aux échecs, aux prises et aux menaces.' : (
+              <>
+                Dans la partie, <San san={played} color={color} /> a été joué. Faites mieux !
+              </>
+            )}
+          </div>
+          <div className="cc-actions">
+            {retry.status === 'ko' && (
+              <button className="best-btn retry-btn" onClick={onRetry}>
+                <RotateCcw size={15} /> Réessayer
+              </button>
+            )}
+            <button className="best-btn" onClick={onSolution}>
+              <Lightbulb size={15} /> Solution
+            </button>
+            <button className="best-btn ghost-btn" onClick={onExit}>
+              Annuler
+            </button>
+          </div>
         </div>
       </div>
     </div>

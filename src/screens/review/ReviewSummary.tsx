@@ -1,4 +1,4 @@
-import { ChevronRight, Play, Sparkles } from 'lucide-react';
+import { ChevronRight, Play, RefreshCcw, Sparkles, Trash2 } from 'lucide-react';
 import { ClassIcon, CLASS_META } from '../../components/ClassIcon';
 import { EvalGraph } from '../../components/Eval';
 import { Avatar, CountUp, San } from '../../components/ui';
@@ -17,7 +17,19 @@ function phaseIcon(acc?: number): Classification | null {
   return 'blunder';
 }
 
-export function ReviewSummary({ game, analysis, onStart }: { game: StoredGame; analysis: GameAnalysis; onStart: (ply?: number) => void }) {
+export function ReviewSummary({
+  game,
+  analysis,
+  onStart,
+  onReanalyze,
+  onDelete,
+}: {
+  game: StoredGame;
+  analysis: GameAnalysis;
+  onStart: (ply?: number) => void;
+  onReanalyze: () => void;
+  onDelete: () => void;
+}) {
   const { white, black } = analysis.summary;
   const keyMoves = analysis.moves.filter((m) => ['brilliant', 'great', 'blunder', 'miss', 'mistake'].includes(m.classification));
   const markers = keyMoves.map((m) => ({ ply: m.ply, cls: m.classification }));
@@ -144,6 +156,18 @@ export function ReviewSummary({ game, analysis, onStart }: { game: StoredGame; a
           </div>
         </>
       )}
+
+      <div className="row" style={{ marginTop: 18, justifyContent: 'center', gap: 8 }}>
+        <button className="btn ghost sm" onClick={onReanalyze}>
+          <RefreshCcw size={15} /> Relancer l'analyse
+        </button>
+        <button className="btn ghost sm" style={{ color: '#ff8c80' }} onClick={onDelete}>
+          <Trash2 size={15} /> Supprimer
+        </button>
+      </div>
+      <div className="dim tiny" style={{ textAlign: 'center', marginTop: 4 }}>
+        Stockfish 19 · profondeur {analysis.depth}
+      </div>
 
       <div className="sticky-cta">
         <button className="btn primary lg block" onClick={() => onStart(0)}>
